@@ -1,23 +1,53 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import StepIndicator from '../components/StepIndicator';
 import ResultCard from '../components/ResultCard';
 import DetailModal from '../components/DetailModal';
 import { calculateRecommendations, type ScoredResult } from '../utils/scoring';
 import { questions } from '../data/questions';
+import { encodeStateToParams, decodeStateFromParams } from '../utils/urlState';
 
 const questionKeyMap = Object.fromEntries(questions.map((q) => [q.id, q.competencyKey]));
 
 export default function Step3() {
   const navigate = useNavigate();
-  const { answers, selectedInterests, resetAll } = useApp();
+  const [searchParams] = useSearchParams();
+  const { answers, selectedInterests, setAnswers, setSelectedInterests, resetAll } = useApp();
   const [selectedResult, setSelectedResult] = useState<ScoredResult | null>(null);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
+  const [copied, setCopied] = useState(false);
+
+  // URL 파라미터에서 상태 복원 (직접 링크 접근 시)
+  const urlState = useMemo(
+    () => decodeStateFromParams(searchParams.toString()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [] // 마운트 시 한 번만 파싱
+  );
+
+  // URL에서 복원된 경우 컨텍스트에 반영 (DetailModal 등 하위 컴포넌트를 위해)
+  useEffect(() => {
+    if (urlState) {
+      setSelectedInterests(urlState.selectedInterests);
+      setAnswers(urlState.answers);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 정상 플로우로 진입한 경우 URL에 상태 인코딩
+  useEffect(() => {
+    if (!urlState && selectedInterests.length > 0 && Object.keys(answers).length > 0) {
+      const query = encodeStateToParams(selectedInterests, answers);
+      window.history.replaceState(null, '', `${window.location.pathname}?${query}`);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 점수 계산에 사용할 실제 값 (URL 파라미터 우선)
+  const activeAnswers = urlState?.answers ?? answers;
+  const activeInterests = urlState?.selectedInterests ?? selectedInterests;
 
   const recommendations = useMemo(
-    () => calculateRecommendations(answers, questionKeyMap),
-    [answers]
+    () => calculateRecommendations(activeAnswers, questionKeyMap),
+    [activeAnswers]
   );
 
   const handleBookmarkToggle = (id: string) => {
@@ -34,15 +64,18 @@ export default function Step3() {
     navigate('/');
   };
 
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-[#f9fafb] flex flex-col">
-      {/* 고정 헤더 */}
+      {/* 헤더 */}
       <div className="bg-white border-b border-[#e5e7eb] px-8 pt-6 pb-8">
         <div className="max-w-[1071px] mx-auto w-full flex flex-col gap-10">
-          {/* 스텝 인디케이터 (모두 완료) */}
           <StepIndicator currentStep={3} />
-
-          {/* 타이틀 + 서브타이틀 */}
           <div className="flex flex-col gap-4 items-center text-center w-full">
             <p className="font-semibold text-[24px] tracking-[-0.48px] text-[#101828]">
               🎉 진단 완료! 맞춤 추천 결과를 확인하세요
@@ -73,11 +106,31 @@ export default function Step3() {
         </div>
       </div>
 
-      {/* 하단 고정 액션 바 */}
+      {/* 하단 액션 바 */}
       <div className="bg-[#f9fafb] border-t border-[#e5e7eb] px-8 py-6 flex flex-col gap-4">
         <div className="max-w-[1071px] mx-auto w-full flex flex-col gap-4">
-          {/* PDF 저장 + 이메일 전송 */}
+          {/* 결과 링크 복사 + PDF 저장 */}
           <div className="flex gap-3">
+            <button
+              onClick={handleCopyLink}
+              className="flex-1 h-[68px] rounded-[14px] bg-white border border-[#9e1a21] flex items-center justify-center gap-3 text-[16px] text-[#9e1a21] hover:bg-[#fef2f2] transition-colors"
+            >
+              {copied ? (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9e1a21" strokeWidth="1.5">
+                    <path d="M4 10l5 5 7-8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  링크 복사됨!
+                </>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M8 5H5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3M13 3h4m0 0v4m0-4L9 11" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  결과 링크 복사
+                </>
+              )}
+            </button>
             <button
               disabled
               className="flex-1 h-[68px] rounded-[14px] bg-white border border-[rgba(161,161,170,0.7)] flex items-center justify-center gap-3 text-[16px] text-[#364153] cursor-not-allowed opacity-60"
@@ -86,15 +139,6 @@ export default function Step3() {
                 <path d="M10 2v10M6 8l4 4 4-4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               PDF 저장
-            </button>
-            <button
-              disabled
-              className="flex-1 h-[68px] rounded-[14px] bg-white border border-[rgba(161,161,170,0.7)] flex items-center justify-center gap-3 text-[16px] text-[#364153] cursor-not-allowed opacity-60"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M2 4a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V4zM2 4l8 7 8-7" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              이메일 전송
             </button>
           </div>
 
@@ -116,8 +160,8 @@ export default function Step3() {
       {selectedResult && (
         <DetailModal
           result={selectedResult}
-          selectedInterests={selectedInterests}
-          answers={answers}
+          selectedInterests={activeInterests}
+          answers={activeAnswers}
           onClose={() => setSelectedResult(null)}
           isBookmarked={bookmarks.has(selectedResult.id)}
           onBookmarkToggle={() => handleBookmarkToggle(selectedResult.id)}

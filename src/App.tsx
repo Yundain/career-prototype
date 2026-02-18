@@ -6,7 +6,7 @@ import Step3 from './pages/Step3';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/career-prototype">
       <AppProvider>
         <Routes>
           <Route path="/" element={<Step1 />} />

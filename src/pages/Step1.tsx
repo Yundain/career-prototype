@@ -46,7 +46,7 @@ export default function Step1() {
       </div>
 
       {/* 카드 그리드 */}
-      <div className="flex-1 pb-[113px]">
+      <div className="flex-1 pb-[200px]">
         <div className="max-w-[1071px] mx-auto px-8 pt-10">
           <div className="flex flex-wrap gap-4 content-start">
             {interestAreas.map((area) => (
