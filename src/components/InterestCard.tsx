@@ -1,50 +1,56 @@
-import type { InterestArea } from '../data/interestAreas';
-
 interface InterestCardProps {
-  area: InterestArea;
+  keyword: string;
   isSelected: boolean;
+  disabled: boolean;
   onClick: () => void;
+  onHover: () => void;
+  onHoverEnd: () => void;
 }
 
-export default function InterestCard({ area, isSelected, onClick }: InterestCardProps) {
+export default function InterestCard({
+  keyword,
+  isSelected,
+  disabled,
+  onClick,
+  onHover,
+  onHoverEnd,
+}: InterestCardProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-[325px] p-[22px] rounded-[14px] border-2 text-left transition-all duration-200 flex items-center
-        ${isSelected
-          ? 'border-[#9e1a21] shadow-[0px_4px_6px_0px_rgba(0,0,0,0.1),0px_2px_4px_0px_rgba(0,0,0,0.1)] bg-white'
-          : 'border-[#e5e7eb] bg-white hover:border-[#9e1a21]'
-        }`}
+      onMouseEnter={onHover}
+      onMouseLeave={onHoverEnd}
+      disabled={disabled && !isSelected}
+      className={`px-5 py-4 rounded-[14px] border-2 text-left transition-all duration-150 flex items-center gap-3 ${
+        isSelected
+          ? 'border-[#9e1a21] bg-[#fef2f2] shadow-[0px_4px_6px_0px_rgba(0,0,0,0.1),0px_2px_4px_0px_rgba(0,0,0,0.1)]'
+          : disabled
+          ? 'border-[#e5e7eb] bg-white opacity-40 cursor-not-allowed'
+          : 'border-[#e5e7eb] bg-white hover:border-[#9e1a21] hover:bg-[#fef9f9]'
+      }`}
     >
-      <div className="flex flex-col gap-3 items-start w-full">
-        {/* 타이틀 행: 텍스트 + 체크 아이콘 */}
-        <div className="flex items-end justify-between w-full">
-          <p className="font-bold text-[14px] leading-5 text-[#364153] pr-2">
-            {area.title}
-          </p>
-          {/* 체크 아이콘 - 선택 시 visible, 미선택 시 opacity-0 */}
-          <div
-            className={`bg-[#9e1a21] flex items-center justify-center rounded-full shrink-0 w-6 h-6 transition-opacity ${
-              isSelected ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M3 8L6.5 11.5L13 4.5"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-        </div>
+      <span
+        className={`text-[14px] font-semibold leading-5 transition-colors ${
+          isSelected ? 'text-[#9e1a21]' : 'text-[#364153]'
+        }`}
+      >
+        {keyword}
+      </span>
 
-        {/* 설명 */}
-        <p className="text-[12px] leading-5 text-[#364153] w-full whitespace-pre-wrap">
-          {area.description}
-        </p>
-      </div>
+      {/* 체크 아이콘 — 선택 시에만 공간 차지 */}
+      {isSelected && (
+        <div className="bg-[#9e1a21] flex items-center justify-center rounded-full shrink-0 w-5 h-5">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M2 6L5 9L10 3"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+      )}
     </button>
   );
 }

@@ -17,6 +17,10 @@ export default function Step3() {
   const [selectedResult, setSelectedResult] = useState<ScoredResult | null>(null);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
+  const [rating, setRating] = useState<number | null>(null);
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState('');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   // URL 파라미터에서 상태 복원 (직접 링크 접근 시)
   const urlState = useMemo(
@@ -103,6 +107,53 @@ export default function Step3() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* 만족도 평가 */}
+      <div className="max-w-[1071px] mx-auto px-8 pb-8 w-full">
+        <div className="bg-white border border-[#e5e7eb] rounded-[16px] px-8 py-6 flex flex-col items-center gap-4">
+          <p className="text-[15px] font-semibold text-[#364153]">이 추천 결과가 도움이 됐나요?</p>
+
+          {/* 별점 */}
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => { setRating(star); setFeedbackSubmitted(false); }}
+                onMouseEnter={() => setHoveredRating(star)}
+                onMouseLeave={() => setHoveredRating(null)}
+                className="text-[32px] leading-none transition-transform hover:scale-110"
+              >
+                <span className={(hoveredRating ?? 0) >= star || (rating ?? 0) >= star ? 'text-[#fab712]' : 'text-[#d1d5dc]'}>
+                  ★
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* 별점 선택 후: 서술형 입력 or 완료 메시지 */}
+          {rating !== null && (
+            feedbackSubmitted ? (
+              <p className="text-[13px] text-[#6a7282]">소중한 피드백 감사해요!</p>
+            ) : (
+              <div className="w-full flex flex-col gap-3">
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="더 하고 싶은 말이 있다면 남겨주세요. (선택)"
+                  rows={3}
+                  className="w-full border border-[#e5e7eb] rounded-[10px] px-4 py-3 text-[14px] text-[#364153] placeholder-[#99a1af] resize-none focus:outline-none focus:border-[#9e1a21] transition-colors"
+                />
+                <button
+                  onClick={() => setFeedbackSubmitted(true)}
+                  className="self-end px-5 h-10 rounded-[10px] bg-[#9e1a21] text-white text-[14px] font-semibold hover:bg-[#7f1419] transition-colors"
+                >
+                  제출하기
+                </button>
+              </div>
+            )
+          )}
         </div>
       </div>
 

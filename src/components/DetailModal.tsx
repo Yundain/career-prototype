@@ -135,7 +135,6 @@ export default function DetailModal({
 
             {/* 이 분야는요 */}
             <div className="flex flex-col gap-2">
-              <p className="text-[14px] text-[#364153] leading-5">이 분야는요</p>
               <p className="text-[16px] text-[#364153] leading-[26px]">{result.careerDescription}</p>
             </div>
 
@@ -160,20 +159,6 @@ export default function DetailModal({
               </div>
             </div>
 
-            {/* 진출 분야 */}
-            <div className="flex flex-col gap-3">
-              <p className="text-[14px] text-[#364153] leading-5">진출 분야</p>
-              <div className="flex flex-wrap gap-2">
-                {result.careerFieldGroups.map((group) => (
-                  <span
-                    key={group}
-                    className="bg-[#f4f4f4] px-[13px] py-[9px] rounded-[10px] text-[14px] text-[#364153] leading-5"
-                  >
-                    {group}
-                  </span>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* 학과 상세 박스 */}
@@ -198,18 +183,34 @@ export default function DetailModal({
             {/* 졸업 후 진로 */}
             <div className="flex flex-col gap-3">
               <p className="text-[14px] text-[#364153] leading-5">졸업 후 진로</p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 {result.afterGraduation.map((career) => (
-                  <div
+                  <span
                     key={career}
-                    className="bg-[#f4f4f4] h-[46px] rounded-[10px] flex items-center px-[17px]"
-                    style={{ width: 'calc(50% - 6px)' }}
+                    className="bg-[#f4f4f4] px-[13px] py-[9px] rounded-[10px] text-[14px] text-[#364153] leading-5"
                   >
-                    <p className="text-[14px] text-[#364153] leading-5">{career}</p>
-                  </div>
+                    {career}
+                  </span>
                 ))}
               </div>
             </div>
+
+            {/* 1학년 추천 과목 */}
+            {result.recommendedCourses && (
+              <div className="flex flex-col gap-3">
+                <p className="text-[14px] text-[#364153] leading-5">1학년 추천 과목</p>
+                <div className="flex flex-wrap gap-2">
+                  {result.recommendedCourses.split(',').map((course) => (
+                    <span
+                      key={course}
+                      className="bg-[#f4f4f4] px-[13px] py-[9px] rounded-[10px] text-[14px] text-[#364153] leading-5"
+                    >
+                      {course.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

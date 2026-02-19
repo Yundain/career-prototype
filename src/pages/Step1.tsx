@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import StepIndicator from '../components/StepIndicator';
@@ -7,22 +8,43 @@ import { interestAreas } from '../data/interestAreas';
 const MIN_SELECT = 2;
 const MAX_SELECT = 4;
 
+// 각 interestArea의 키워드를 독립적인 항목으로 평탄화
+// id 형식: `${areaId}_${kwIdx}`
+const keywordItems = interestAreas.flatMap((area) =>
+  area.title.split(',').map((kw, i) => ({
+    id: `${area.id}_${i}`,
+    keyword: kw.trim(),
+    areaId: area.id,
+    description: area.description,
+  }))
+);
+
 export default function Step1() {
   const navigate = useNavigate();
-  const { selectedInterests, setSelectedInterests } = useApp();
+  const { setSelectedInterests } = useApp();
 
-  const count = selectedInterests.length;
+  // 선택된 키워드 id 집합
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [hoveredItem, setHoveredItem] = useState<typeof keywordItems[number] | null>(null);
+
+  const count = selectedIds.size;
   const canProceed = count >= MIN_SELECT;
+  const canSelectMore = count < MAX_SELECT;
   const progress = (count / MAX_SELECT) * 100;
 
-  const handleToggle = (id: number) => {
-    if (selectedInterests.includes(id)) {
-      setSelectedInterests(selectedInterests.filter((i) => i !== id));
-    } else {
-      if (count < MAX_SELECT) {
-        setSelectedInterests([...selectedInterests, id]);
+  const handleToggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < MAX_SELECT) {
+        next.add(id);
       }
-    }
+      // 선택된 areaId 집합을 AppContext에 동기화 (DetailModal 추천 이유용)
+      const areaIds = [...new Set([...next].map((k) => Number(k.split('_')[0])))];
+      setSelectedInterests(areaIds);
+      return next;
+    });
   };
 
   return (
@@ -30,40 +52,57 @@ export default function Step1() {
       {/* 고정 헤더 */}
       <div className="bg-white border-b border-[#e5e7eb] px-8 py-6 sticky top-0 z-20">
         <div className="max-w-[1071px] mx-auto w-full flex flex-col gap-10">
-          {/* 스텝 인디케이터 */}
           <StepIndicator currentStep={1} />
-
-          {/* 타이틀 + 서브타이틀 (center) */}
           <div className="flex flex-col gap-4 items-center text-center w-full">
             <p className="font-semibold text-[24px] leading-6 tracking-[-0.24px] text-[#101828]">
               📝 관심있는 분야를 선택해주세요
             </p>
             <p className="text-[14px] leading-[22.75px] text-[#4a5565]">
-              당신이 관심있는 진출 분야를 2-4개 선택해주세요. 솔직하게 선택할수록 더 정확한 추천을 받을 수 있어요.
+              관심있는 키워드를 2~4개 선택해주세요. 각 키워드 위에 마우스를 올리면 설명을 볼 수 있어요.
             </p>
           </div>
         </div>
       </div>
 
-      {/* 카드 그리드 */}
-      <div className="flex-1 pb-[200px]">
+      {/* 키워드 그리드 */}
+      <div className="flex-1 pb-[240px]">
         <div className="max-w-[1071px] mx-auto px-8 pt-10">
-          <div className="flex flex-wrap gap-4 content-start">
-            {interestAreas.map((area) => (
+          <div className="flex flex-wrap gap-3 content-start">
+            {keywordItems.map((item) => (
               <InterestCard
-                key={area.id}
-                area={area}
-                isSelected={selectedInterests.includes(area.id)}
-                onClick={() => handleToggle(area.id)}
+                key={item.id}
+                keyword={item.keyword}
+                isSelected={selectedIds.has(item.id)}
+                disabled={!canSelectMore && !selectedIds.has(item.id)}
+                onClick={() => handleToggle(item.id)}
+                onHover={() => setHoveredItem(item)}
+                onHoverEnd={() => setHoveredItem(null)}
               />
             ))}
           </div>
         </div>
       </div>
 
+      {/* 분야 설명 패널 (hover 시 고정 바 위에 표시) */}
+      <div
+        className={`fixed bottom-[185px] left-0 right-0 z-20 px-8 transition-all duration-200 ${
+          hoveredItem ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+        }`}
+      >
+        <div className="max-w-[1071px] mx-auto">
+          <div className="bg-white border border-[#e5e7eb] rounded-[12px] px-5 py-4 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)]">
+            <p className="text-[13px] font-semibold text-[#9e1a21] mb-1">
+              {hoveredItem?.keyword}
+            </p>
+            <p className="text-[13px] leading-[1.6] text-[#4a5565]">
+              {hoveredItem?.description}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 하단 고정 바 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e7eb] z-30">
-        {/* 선택 현황 + 진행 바 */}
         <div className="max-w-[1071px] mx-auto px-8 pt-5 flex flex-col gap-3 h-[85px]">
           <div className="flex items-center justify-between h-5">
             <span className="text-[14px] text-[#4a5565] leading-5">선택 현황</span>
@@ -77,7 +116,6 @@ export default function Step1() {
           </div>
         </div>
 
-        {/* 버튼 */}
         <div className="max-w-[1071px] mx-auto px-8 pb-6">
           <button
             onClick={() => navigate('/step2')}
